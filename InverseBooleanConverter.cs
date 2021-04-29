@@ -7,6 +7,9 @@ using System.Windows.Data;
 
 namespace SinusCalculator
 {
+    /// <summary>
+    /// Ersteinmal uninteressant und kompliziert
+    /// </summary>
     [ValueConversion(typeof(bool), typeof(bool))]
     public class InverseBooleanConverter : IValueConverter
     {

@@ -1,6 +1,11 @@
-﻿using HandyControl.Tools;
-using HandyControl.Themes;
-using ScottPlot;
+﻿/*
+ * Diese Datei beinhaltet die Interaktionslokig für MainWindow.xaml
+ * Die Interaktionslogik legt fest, was passiert wenn der Nutzer mit der Nutzeroberfläche agiert.
+ * Dazu gehört:
+ * - Texte ändern
+ * - Farbschema ändern
+ * - Werte anzeigen
+ */
 using System;
 using System.Diagnostics;
 using System.Windows;
@@ -9,6 +14,9 @@ using HandyControl.Controls;
 
 namespace SinusCalculator
 {
+    /// <summary>
+    /// Interaktionslogik für MainWindow.xaml
+    /// </summary>
     public partial class MainWindow
     {
         public FunctionProperties CurrentFunction;
@@ -18,9 +26,12 @@ namespace SinusCalculator
         private double Graph_XMax = 6 * Math.PI;
         private double Graph_Step = 0.05;
 
-
+        /// <summary>
+        /// Einstiegspunkt für wenn das Fenster gestartet wird
+        /// </summary>
         public MainWindow()
         {
+            //Werte festlegen bevor sie angezeit werden
             this.CurrentFunction = new FunctionProperties();
             this.CurrentFunction.Reset();
             this.CurrentFunction.onValueChanged += CurrentFunction_onValueChanged;
@@ -29,51 +40,75 @@ namespace SinusCalculator
                 Degree = 0,
                 Radian = 0
             };
+
+            //Laden des Fensters
             InitializeComponent();
 
+            //Werte festlegen
             this.FunctionPropertyGrid.ShowSortButton = false;
-
 
             this.GraphXMinInput.Value = this.Graph_XMin;
             this.GraphXMaxInput.Value = this.Graph_XMax;
             this.GraphStepInput.Value = this.Graph_Step;
 
+            //Den DarkMode für den Graphen anschalten
             this.Plot.plt.Style(ScottPlot.Style.Black);
 
             this.FunctionPropertyGrid.SelectedObject = this.CurrentFunction;
         }
+        /// <summary>
+        /// Wird aufgerufen, wenn sich die aktuelle Sinusfuntion ändert
+        /// 
+        /// Ist dafür zuständig den Graphen und die angezeigte Funktionsgleichung zu aktuallisieren.
+        /// </summary>
         private void CurrentFunction_onValueChanged(object sender, EventArgs e)
         {
             this.FunctionEquasionBox.Text = this.CurrentFunction.GetFunctionTerm();
-            //this.FunctionPropertyGrid.R
             if (this.AutoUpdateSwitch.IsChecked.Value)
                 this.UpdatePlot();
         }
+        
+        /// <summary>
+        /// Dafür zuständig den Radian - Grad Umrechner zu betreiben
+        /// </summary>
         private void RadianBox_ValueChanged(object sender, HandyControl.Data.FunctionEventArgs<double> e)
         {
             this.CurrentRadianDegreeConverter.Radian = e.Info;
-            this.DegreeBox.ValueChanged -= this.DegreeBox_ValueChanged;
+            this.DegreeBox.ValueChanged -= this.DegreeBox_ValueChanged; //Notwendig um eine Rückkopplung zu vermeiden
             this.DegreeBox.Value = this.CurrentRadianDegreeConverter.Degree;
             this.DegreeBox.ValueChanged += this.DegreeBox_ValueChanged;
         }
+        /// <summary>
+        /// Dafür zuständig den Radian - Grad Umrechner zu betreiben
+        /// </summary>
         private void DegreeBox_ValueChanged(object sender, HandyControl.Data.FunctionEventArgs<double> e)
         {
             this.CurrentRadianDegreeConverter.Degree = e.Info;
-            this.RadianBox.ValueChanged -= this.RadianBox_ValueChanged;
+            this.RadianBox.ValueChanged -= this.RadianBox_ValueChanged; //Notwendig um eine Rückkopplung zu vermeiden
             this.RadianBox.Value = this.CurrentRadianDegreeConverter.Radian;
             this.RadianBox.ValueChanged += this.RadianBox_ValueChanged;
         }
-
+        /// <summary>
+        /// Wird aufgerufen wenn der Reset-Knopf gedrückt wurde und setzt die Werte der Funktion wieder auf den Standard
+        /// </summary>
         private void ResetFunctionGenerator_Click(object sender, RoutedEventArgs e)
         {
             this.CurrentFunction.Reset();
             this.FunctionPropertyGrid.SelectedObject = this.CurrentFunction;
         }
-        private void ApplyGraph_Click(object sender, RoutedEventArgs e) => this.UpdatePlot();
+        /// <summary>
+        /// Wird aufgerufen wenn der Button zum Aktuallisieren des Graphens gedrückt wurde
+        /// </summary>
+        private void ApplyGraph_Click(object sender, RoutedEventArgs e) => this.UpdatePlot(); //Direkte Weiterleitung an die UpdatePlot Methode
+        /// <summary>
+        /// Errechnet die Werte für den Graphen und zeigt diese dann an
+        /// </summary>
         private void UpdatePlot()
         {
             int Steps = Convert.ToInt32((this.Graph_XMax - this.Graph_XMin) / this.Graph_Step);
 
+            //Das sind Arrays also Listen mit einer bestimmten Länge
+            //Ein double(-precision) ist ein Datentyp mit dem Kommazahlen gespeichert werden
             double[] xs = new double[Steps];
             double[] ys = new double[Steps];
 
@@ -87,14 +122,20 @@ namespace SinusCalculator
                     ys[i] = this.CurrentFunction.Amplitude * (Math.Cos(this.CurrentFunction.Frequency * (X - this.CurrentFunction.XOffset)) + this.CurrentFunction.YOffset);
             }
 
+            //Nutzerinterface aktuallisieren
             this.Plot.plt.Clear();
             this.Plot.plt.PlotScatter(xs, ys, label: "Funktion");
             this.Plot.Render();
         }
+        /// <summary>
+        /// Wird aufgerufen wenn sich die Einstellungen für den Graphen geändert haben
+        /// </summary>
         private void GraphData_ValueChanged(object sender, HandyControl.Data.FunctionEventArgs<double> e)
         {
+            //Den Typen des object sender zu NumericUpDown ändern
             NumericUpDown numericUpDown = sender as NumericUpDown;
 
+            //Anhand des definierten DataContext herausfinden welches NumericUpDown sich geändert hat
             switch ((string)numericUpDown.DataContext)
             {
                 case "XMin":
@@ -113,11 +154,17 @@ namespace SinusCalculator
                     this.Graph_Step = e.Info;
                     break;
             }
+            //Neue Minimum und Maximum Werte für das Nutzerinterface setzten um Fehler vorzubeugen
             this.GraphXMinInput.Maximum = this.Graph_XMax - 0.01;
             this.GraphXMaxInput.Minimum = this.Graph_XMin + 0.01;
+
+            //Graphen aktuallisieren
             if (this.AutoUpdateSwitch.IsChecked.Value)
                 this.UpdatePlot();
         }
+        /// <summary>
+        /// Wird aufgerufen, wenn Schalter für den Dunklen Modus geklickt wird
+        /// </summary>
         private void ThemeSwitch_Click(object sender, RoutedEventArgs e)
         {
             if (this.ThemeSwitch.IsChecked.Value)
@@ -136,7 +183,10 @@ namespace SinusCalculator
                     this.ThemeSwitch.IsChecked = true;
             }
         }
-        private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e) => Process.Start(e.Uri.ToString());
+        /// <summary>
+        /// Wird aufgerufen wenn ein Link geklickt wird
+        /// </summary>
+        private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e) => Process.Start(e.Uri.ToString()); //Einfach den Browser mit der Adresse starten
     }
     public class RadianDegreeConverter
     {
@@ -161,6 +211,9 @@ namespace SinusCalculator
             }
         }
     }
+    /// <summary>
+    /// Klasse zur Speicherung der Eigenschaften der Sinusfunktion 
+    /// </summary>
     public class FunctionProperties
     {
         private double amplitude;
@@ -270,6 +323,8 @@ namespace SinusCalculator
 
         public string GetFunctionTerm()
         {
+            //Starke Nutzung von Inline-If/Else
+            //Schema: Bedingung ? Wenn Wahr : Wenn Falsch;
             string ret = this.Amplitude != 1 ? this.Amplitude + "*(" : "";
             ret += !this.cosinus ? "sin(" : "cos(";
             ret += this.Frequency != 1 ? this.Frequency + "*X" : "X";
