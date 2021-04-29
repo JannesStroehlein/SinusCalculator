@@ -4,21 +4,25 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:hc="https://handyorg.github.io/handycontrol"
-        xmlns:lc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
+        xmlns:sc="clr-namespace:SinusCalculator"
+        xmlns:converters="clr-namespace:SinusCalculator"
         mc:Ignorable="d"
-        Title="Sinus Calculator" 
+        Title="Sinus Rechner" 
         WindowStartupLocation="CenterScreen"
-        ShowTitle="True"
+        ShowTitle="False"
         Height="800" 
         Width="1200">
+    <hc:Window.Resources>
+        <converters:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
+    </hc:Window.Resources>
     <hc:Window.NonClientAreaContent>
         <DockPanel Height="29" LastChildFill="False">
             <Menu DockPanel.Dock="Left">
-                <MenuItem Header="File">
-                    <MenuItem Header="Save"/>
-                    <MenuItem Header="Save As"/>
-                    <MenuItem Header="Open"/>
-                    <MenuItem Header="Exit"/>
+                <MenuItem Header="Datei">
+                    <MenuItem Header="Speichern" InputGestureText="Strg+S" IsEnabled="False"/>
+                    <MenuItem Header="Speichern Als" InputGestureText="Strg+Shift+S" IsEnabled="False"/>
+                    <MenuItem Header="Öffnen" InputGestureText="Strg+O"/>
+                    <MenuItem Header="Beenden" InputGestureText="Alt+F4"/>
                 </MenuItem>
             </Menu>
             <ToggleButton Click="ThemeSwitch_Click" DockPanel.Dock="Right" x:Name="ThemeSwitch" IsChecked="True" Style="{StaticResource ToggleButtonSwitch}"/>
@@ -43,28 +47,30 @@
                     <ColumnDefinition Width="1*"/>
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="38"/>
                     <RowDefinition Height="1*"/>
-                    <RowDefinition Height="0.1*"/>
                     <RowDefinition Height="0.08*"/>
                     <RowDefinition Height="0.1*"/>
                 </Grid.RowDefinitions>
-                <hc:PropertyGrid x:Name="FunctionPropertyGrid" VerticalAlignment="Stretch" Grid.Column="0" Grid.ColumnSpan="2"/>
-                <DockPanel Margin="3" VerticalAlignment="Center" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" LastChildFill="False">
-                    <RadioButton x:Name="SinusRadioButton" DockPanel.Dock="Left" Content="Sinus" IsChecked="True"/>
-                    <RadioButton x:Name="CosinusRadioButton" DockPanel.Dock="Right" Content="Cosinus" IsChecked="False"/>
-                </DockPanel>
+                <TextBox Style="{StaticResource TextBoxExtend}" x:Name="FunctionEquasionBox" IsReadOnly="True" Grid.Column="0" Grid.ColumnSpan="2" hc:TitleElement.TitlePlacement="Left" hc:TitleElement.Title="f(x)=" hc:TitleElement.TitleWidth="35" Margin="3"/>
+                <hc:PropertyGrid x:Name="FunctionPropertyGrid" Grid.Row="1" VerticalAlignment="Stretch" Grid.Column="0" Grid.ColumnSpan="2"/>
                 <CheckBox IsChecked="True" Margin="3" HorizontalAlignment="Left" Content="Auto Update" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" x:Name="AutoUpdateSwitch"/>
                 <Button Margin="3" x:Name="ResetFunctionGenerator" Click="ResetFunctionGenerator_Click" Content="Reset" HorizontalAlignment="Stretch" Grid.Column="0" Grid.Row="3"/>
-                <Button Margin="3" x:Name="ApplyGraph" Click="ApplyGraph_Click" Content="Graph Aktuallisieren" HorizontalAlignment="Stretch" Grid.Column="1" Grid.Row="3"/>
+                <Button Margin="3" x:Name="ApplyGraph" Click="ApplyGraph_Click" Content="Graph Aktuallisieren" HorizontalAlignment="Stretch" Grid.Column="1" Grid.Row="3" IsEnabled="{Binding ElementName=AutoUpdateSwitch, Path=IsChecked, Converter={StaticResource InverseBooleanConverter}}"/>
             </Grid>
-
         </GroupBox>
         <WpfPlot Name="Plot" Grid.Column="1"/>
         <GroupBox Margin="2" Header="Rechnung" Grid.Row="1">
             <hc:TextBox IsReadOnly="True"/>
         </GroupBox>
-        <DockPanel Grid.Column="1" Grid.Row="1" LastChildFill="False">
-            <GroupBox Margin="2" Header="Grad - Gradmaß">
+        <Grid Grid.Row="1" Grid.Column="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="2.5*"/>
+                <ColumnDefinition Width="5*"/>
+            </Grid.ColumnDefinitions>
+            <GroupBox Margin="2" Header="Grad - Gradmaß" Grid.Column="0">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="1*"/>
@@ -75,7 +81,7 @@
                     <hc:NumericUpDown VerticalAlignment="Center" Grid.Row="1" ValueChanged="RadianBox_ValueChanged" x:Name="RadianBox" hc:InfoElement.TitleWidth="140" hc:InfoElement.Title="Bogenmaß (π)" Style="{StaticResource NumericUpDownPlus}"/>
                 </Grid>
             </GroupBox>
-            <GroupBox Margin="2" Header="Graph">
+            <GroupBox Margin="2" Header="Graph" Grid.Column="1">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="1*"/>
@@ -87,13 +93,17 @@
                     <hc:NumericUpDown Minimum="0.01" x:Name="GraphStepInput" VerticalAlignment="Center" Grid.Row="2" DataContext="Step" ValueChanged="GraphData_ValueChanged" hc:InfoElement.TitleWidth="140" hc:InfoElement.Title="Schrittgröße" Style="{StaticResource NumericUpDownPlus}" Increment="0.01"/>
                 </Grid>
             </GroupBox>
-            <GroupBox Margin="2" Header="Y Werte Finden">
+            <GroupBox Margin="2" Header="Y Werte Finden" Grid.Column="2">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="1*"/>
-                        <RowDefinition Height="1*"/>
+                        <RowDefinition Height="1.1*"/>
+                        <RowDefinition Height="1.1*"/>
                         <RowDefinition Height="1*"/>
                     </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1*"/>
+                        <ColumnDefinition Width="1*"/>
+                    </Grid.ColumnDefinitions>
                     <Grid Grid.Row="0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="1*"/>
@@ -103,17 +113,24 @@
                         <hc:NumericUpDown VerticalAlignment="Center" Grid.Column="1" hc:InfoElement.TitleWidth="140" hc:InfoElement.Title="End Wert" Style="{StaticResource NumericUpDownPlus}"/>
                     </Grid>
                     <hc:NumericUpDown VerticalAlignment="Center" Grid.Row="1" hc:InfoElement.TitleWidth="140" hc:InfoElement.Title="Y Wert" Style="{StaticResource NumericUpDownPlus}"/>
-                    <TextBox Grid.Row="3" IsReadOnly="True" hc:InfoElement.TitleWidth="140" hc:InfoElement.Title="Ergebnisse" Style="{StaticResource TextBoxExtend}"/>
+                    <Button Grid.Column="0" Grid.Row="3" Content="Berechnen"/>
+                    <TextBox Margin="3,0,0,0" Grid.Row="0" Grid.RowSpan="3" Grid.Column="1" IsReadOnly="True" hc:InfoElement.TitleWidth="140" hc:InfoElement.Title="Ergebnisse" Style="{StaticResource TextBoxExtend}"/>
                 </Grid>
             </GroupBox>
-            <GroupBox Margin="2" Header="Haftungsausschluss">
+            <GroupBox Margin="2" Header="Haftungsausschluss" Grid.Column="3">
                 <TextBlock>
-                    Diese Software ist in <Bold>keinster</Bold> Weise dazu gedacht für das Betrügen<LineBreak/>
-                    in Prüfungen eingesetzt zu werden. Sollte dies trotzdem getan<LineBreak/>
-                    werden weist der <Hyperlink NavigateUri="https://github.com/JannesStroehlein" RequestNavigate="Hyperlink_RequestNavigate">Uhrheber</Hyperlink> semtliche Verantwortungen bzw. <LineBreak/>
-                    Schuldansprüche von sich.
+                    Diese Software ist in <Bold>keinster</Bold> Weise dazu gedacht für das Betrügen in Prüfungen<LineBreak/>
+                    eingesetzt zu werden. Sollte dies trotzdem getan werden weist der <Hyperlink NavigateUri="https://github.com/JannesStroehlein" RequestNavigate="Hyperlink_RequestNavigate">Uhrheber</Hyperlink><LineBreak/>
+                    semtliche Verantwortungen bzw. Schuldansprüche von sich.
+                    <LineBreak/><LineBreak/><LineBreak/>
+                    
+                    Der Uhrheber weist auch semtliche Verantwortung für die Korrektheit der <LineBreak/>
+                    Ergebnisse von sich. 
+                    Dieses Programms sollte <Bold>nur</Bold> mit den nötigen Basiskenntnissen<LineBreak/>
+                    zu Evaluirung der Korrektheit der Antwort benutzt werden. Für Ergebnisse, die durch <LineBreak/>
+                    Programmfehler enstanden sind gilt das selbe.
                 </TextBlock>
             </GroupBox>
-        </DockPanel>
+        </Grid>
     </Grid>
 </hc:Window>

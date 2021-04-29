@@ -31,25 +31,21 @@ namespace SinusCalculator
             };
             InitializeComponent();
 
+            this.FunctionPropertyGrid.ShowSortButton = false;
+
+
             this.GraphXMinInput.Value = this.Graph_XMin;
             this.GraphXMaxInput.Value = this.Graph_XMax;
             this.GraphStepInput.Value = this.Graph_Step;
 
             this.Plot.plt.Style(ScottPlot.Style.Black);
 
-            this.SinusRadioButton.Checked += RadioButton_Checked;
-            this.CosinusRadioButton.Checked += RadioButton_Checked;
             this.FunctionPropertyGrid.SelectedObject = this.CurrentFunction;
         }
-
-        private void RadioButton_Checked(object sender, RoutedEventArgs e)
-        {
-            if (this.AutoUpdateSwitch.IsChecked.Value)
-                this.UpdatePlot();
-        }
-
         private void CurrentFunction_onValueChanged(object sender, EventArgs e)
         {
+            this.FunctionEquasionBox.Text = this.CurrentFunction.GetFunctionTerm();
+            //this.FunctionPropertyGrid.R
             if (this.AutoUpdateSwitch.IsChecked.Value)
                 this.UpdatePlot();
         }
@@ -85,7 +81,7 @@ namespace SinusCalculator
             {
                 double X = this.Graph_XMax + i * this.Graph_Step;
                 xs[i] = X;
-                if (this.SinusRadioButton.IsChecked.Value)
+                if (this.CurrentFunction.Cosinus)
                     ys[i] = this.CurrentFunction.Amplitude * (Math.Sin(this.CurrentFunction.Frequency * (X - this.CurrentFunction.XOffset)) + this.CurrentFunction.YOffset);
                 else
                     ys[i] = this.CurrentFunction.Amplitude * (Math.Cos(this.CurrentFunction.Frequency * (X - this.CurrentFunction.XOffset)) + this.CurrentFunction.YOffset);
@@ -95,7 +91,6 @@ namespace SinusCalculator
             this.Plot.plt.PlotScatter(xs, ys, label: "Funktion");
             this.Plot.Render();
         }
-
         private void GraphData_ValueChanged(object sender, HandyControl.Data.FunctionEventArgs<double> e)
         {
             NumericUpDown numericUpDown = sender as NumericUpDown;
@@ -172,12 +167,30 @@ namespace SinusCalculator
         private double frequency;
         private double xOffset;
         private double yOffset;
-        private string functionTerm;
+        private bool cosinus;
 
         private bool EventsEnabled = true;
-
+        
         public event EventHandler<EventArgs> onValueChanged;
 
+        [Category("Generell")]
+        [DisplayName("Cosinus")]
+        [Description("Legt fest ob es eine Sinusfunktion oder Cosinusfunktion ist")]
+        [DefaultValue(false)]
+        public bool Cosinus
+        {
+            get => this.cosinus;
+            set
+            {
+                this.cosinus = value;
+                if (this.EventsEnabled)
+                {
+                    EventHandler<EventArgs> handler = this.onValueChanged;
+                    if (handler != null)
+                        handler(this, new EventArgs());
+                }
+            }
+        }
 
         [Category("Form")]
         [DisplayName("Amplitude")]
@@ -255,33 +268,25 @@ namespace SinusCalculator
             }
         }
 
-        [Category("Generell")]
-        [DisplayName("Funktionsterm")]
-        [Description("Der Funktionsterm der Sinusfunktion")]
-        public string FunctionTerm
+        public string GetFunctionTerm()
         {
-            get => this.functionTerm;
-            set
-            {
-                this.functionTerm = value;
-                if (this.EventsEnabled)
-                {
-                    EventHandler<EventArgs> handler = this.onValueChanged;
-                    if (handler != null)
-                        handler(this, new EventArgs());
-                }
-            }
+            string ret = this.Amplitude != 1 ? this.Amplitude + "*(" : "";
+            ret += !this.cosinus ? "sin(" : "cos(";
+            ret += this.Frequency != 1 ? this.Frequency + "*X" : "X";
+            ret += this.XOffset != 0 ? "-" + this.XOffset + ")" : ")";
+            ret += this.YOffset != 0 ? "+" + this.YOffset : "";
+            ret += this.Amplitude != 1 ? ")" : "";
+            return ret;
         }
-
         public void Reset()
         {
             this.EventsEnabled = false;
+            this.Cosinus = false;
             this.Amplitude = 1;
             this.Frequency = 1;
-            this.FunctionTerm = "sin(x)";
             this.XOffset = 0;
-            this.YOffset = 0;
             this.EventsEnabled = true;
+            this.YOffset = 0;
         }
     }
 }
