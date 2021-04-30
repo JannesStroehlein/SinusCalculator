@@ -41,11 +41,7 @@ namespace SinusCalculator
             this.CurrentFunction = new FunctionProperties();
             this.CurrentFunction.Reset();
             this.CurrentFunction.onValueChanged += CurrentFunction_onValueChanged;
-            this.CurrentRadianDegreeConverter = new RadianDegreeConverter
-            {
-                Degree = 0,
-                Radian = 0
-            };
+            this.CurrentRadianDegreeConverter = new RadianDegreeConverter();
 
             //Initialisieren der Liste
             this.Calculations = new ObservableCollection<CalculationData>();
@@ -76,34 +72,6 @@ namespace SinusCalculator
             if (this.AutoUpdateSwitch.IsChecked.Value)
                 this.UpdatePlot();
         }       
-        /// <summary>
-        /// Dafür zuständig den Radian - Grad Umrechner zu betreiben
-        /// </summary>
-        private void RadianBox_ValueChanged(object sender, HandyControl.Data.FunctionEventArgs<double> e)
-        {
-            this.CurrentRadianDegreeConverter.Radian = e.Info;
-            this.DegreeBox.ValueChanged -= this.DegreeBox_ValueChanged; //Notwendig um eine Rückkopplung zu vermeiden
-            this.DegreeBox.Value = this.CurrentRadianDegreeConverter.Degree;
-            this.DegreeBox.ValueChanged += this.DegreeBox_ValueChanged;
-        }
-        /// <summary>
-        /// Dafür zuständig den Radian - Grad Umrechner zu betreiben
-        /// </summary>
-        private void DegreeBox_ValueChanged(object sender, HandyControl.Data.FunctionEventArgs<double> e)
-        {
-            this.CurrentRadianDegreeConverter.Degree = e.Info;
-            this.RadianBox.ValueChanged -= this.RadianBox_ValueChanged; //Notwendig um eine Rückkopplung zu vermeiden
-            this.RadianBox.Value = this.CurrentRadianDegreeConverter.Radian;
-            this.RadianBox.ValueChanged += this.RadianBox_ValueChanged;
-        }
-        /// <summary>
-        /// Wird aufgerufen wenn der Reset-Knopf gedrückt wurde und setzt die Werte der Funktion wieder auf den Standard
-        /// </summary>
-        private void ResetFunctionGenerator_Click(object sender, RoutedEventArgs e)
-        {
-            this.CurrentFunction.Reset();
-            this.FunctionPropertyGrid.SelectedObject = this.CurrentFunction;
-        }
         /// <summary>
         /// Wird aufgerufen wenn der Button zum Aktuallisieren des Graphens gedrückt wurde
         /// </summary>
@@ -212,12 +180,15 @@ namespace SinusCalculator
             double Value = this.YFinderYValue.Value;
 
             this.YFinderOutputBox.Text = "";
-            double[] values = this.CalcClampedXValuesForYValue(Start, End, Value);
+            CalculationResponse<double[]> values = this.CalcClampedXValuesForYValue(Start, End, Value);
             if (values != null)
             {
-                if (values.Length > 0)
-                    foreach (double xValue in values)
-                        this.YFinderOutputBox.Text += xValue == values[values.Length - 1] ? Math.Round(xValue, 3) + "π" : Math.Round(xValue, 3) + "π, ";
+                if (values.Data.Length > 0)
+                {
+                    foreach (double xValue in values.Data)
+                        this.YFinderOutputBox.Text += xValue == values.Data[values.Data.Length - 1] ? Math.Round(xValue, 3) + "π" : Math.Round(xValue, 3) + "π, ";
+                    this.Calculations.Add(values.Calculation);
+                }
                 else
                     this.YFinderOutputBox.Text = "Kein Ergebniss";
             }
@@ -231,23 +202,29 @@ namespace SinusCalculator
         /// <param name="End">Der maximal X Wert</param>
         /// <param name="Value">Der gesuchte Y Wert</param>
         /// <returns>Die Gefundenen Werte oder falls es zu einem Fehler kommt null</returns>
-        public double[] CalcClampedXValuesForYValue(double Start, double End, double Value)
+        public CalculationResponse<double[]> CalcClampedXValuesForYValue(double Start, double End, double Value)
         {
+            CalculationData calculation = new CalculationData("X Werte von Y Wert ermitteln", "Alle X werte für einen genannten Y Wert berechnen");
+            
             //Fehler Verhindern
             if (Value > this.CurrentFunction.Amplitude)
                 return null;
             
             //Den Ersten X-Punkt wo Y den gesuchten Wert hat (berücksichtigt Sinus und Cosinus)
             double StartRadian = this.CurrentFunction.Cosinus ? Math.Acos(Value) : Math.Asin(Value);
-
+            calculation.Steps.Add(
+                new CalculationStep(
+                    "Startpunkt errechnen",
+                    "Mit asinus den ersten Punkt errechnen. Dieser ist auch eines der Ergebnisse!",
+                    GetIfRounded(StartRadian) 
+                    ? this.CurrentFunction.Cosinus ? string.Format("cos⁻¹({0})≈{1}", Value, Math.Round(StartRadian, 3)) : string.Format("sin⁻¹({0})≈{1}", Value, Math.Round(StartRadian, 3))
+                    : this.CurrentFunction.Cosinus ? string.Format("cos⁻¹({0})={1}", Value, Math.Round(StartRadian, 3)) : string.Format("sin⁻¹({0})={1}", Value, Math.Round(StartRadian, 3))
+                ));
             //Fehler Verhindern
             if (double.IsNaN(StartRadian))
                 return null;
 
             List<double> Matches = new List<double>();
-
-            //Um es einheitlich zu halten wird mit π multipliziert
-            //StartRadian *= Math.PI;
 
             //Den Ersten X-Wert zu den Ergebnissen hinzufügen
             Matches.Add(StartRadian);
@@ -256,6 +233,17 @@ namespace SinusCalculator
 
             //Die Periodenlänge berechnen
             double JumpSize = 2 * Math.PI / this.CurrentFunction.Frequency;
+            if (this.CurrentFunction.Frequency != 1)
+            {
+                calculation.Steps.Add(
+                    new CalculationStep(
+                        "Periodenlänge errechnen",
+                        "2π/Frequenz teilen",
+                        GetIfRounded(JumpSize) 
+                        ? string.Format("2π/{0}≈{1}", this.CurrentFunction.Frequency, Math.Round(JumpSize, 3))
+                        : string.Format("2π/{0}={1}", this.CurrentFunction.Frequency, Math.Round(JumpSize, 3))
+                    ));
+            }
 
             //Die periodischen Wiederholungen von Startpunkt nach links berechnen und dabei auf den minimum Wert achten 
             for (double x = StartRadian - JumpSize; x > Start; x -= JumpSize)
@@ -277,11 +265,19 @@ namespace SinusCalculator
                     Matches.Add(MirroredPoint);
             }
 
+            calculation.Steps.Add(
+                new CalculationStep(
+                    "X Werte berechnen",
+                    "Die Periodenlänge X-Mal mit dem Startpunkt addieren/subtrahieren. Anschließend die Spiegelung des Wertes Berechnen.",
+                    string.Format("{0}+X*{1} oder {0}-X*{1}", Math.Round(StartRadian, 3), Math.Round(JumpSize, 3)) + "\n"
+                     + string.Format("π-({0}+X*{1})", Math.Round(StartRadian, 3), Math.Round(JumpSize, 3))
+                ));
+
             for (int i = 0; i < Matches.Count; i++)
                 Matches[i] = Matches[i] / Math.PI;
 
             //Liste nach Größe sortieren
-            return Matches.OrderBy(d => d).ToArray();
+            return new CalculationResponse<double[]>(Matches.OrderBy(d => d).ToArray(), calculation);
         }
         /// <summary>
         /// Wird aufgerufen wenn eine Taste in der YFinderYValue Box gedrückt wird
@@ -295,28 +291,77 @@ namespace SinusCalculator
         /// Wird aufgerufen, wenn der Rechnungen leeren Button geklickt wird
         /// </summary>
         private void ClearCalculations_Click(object sender, RoutedEventArgs e) => this.Calculations.Clear();
-    }
-    public class RadianDegreeConverter
-    {
-        private double degree;
-        private double radian;
-        public double Degree
+        /// <summary>
+        /// Wird aufgerufen, wenn bei der DegreeBox eine Taste gedrückt wird
+        /// </summary>
+        private void DegreeBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
-            get => this.degree;
-            set
+            if (e.Key == System.Windows.Input.Key.Enter)
             {
-                this.radian = (value * (Math.PI / 180)) / Math.PI;
-                this.degree = value;
+                CalculationResponse<double> radians = this.CurrentRadianDegreeConverter.DegreeToRadian(this.DegreeBox.Value);
+                this.RadianBox.Value = radians.Data;
+                this.Calculations.Add(radians.Calculation);
             }
         }
-        public double Radian 
+        /// <summary>
+        /// Wird aufgerufen, wenn bei der RadianBox eine Taste gedrückt wird
+        /// </summary>
+        private void RadianBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
-            get => this.radian; 
-            set 
+            if (e.Key == System.Windows.Input.Key.Enter)
             {
-                this.degree = value * Math.PI * (180 / Math.PI);
-                this.radian = value;
+                CalculationResponse<double> degrees = this.CurrentRadianDegreeConverter.RadianToDegree(this.RadianBox.Value);
+                this.DegreeBox.Value = degrees.Data;
+                this.Calculations.Add(degrees.Calculation);
             }
+        }
+
+        /// <summary>
+        /// Evaluiert, ob eine Zahl gerundet wurde.
+        /// </summary>
+        /// <param name="n">Die Zahl die gerundet werden soll</param>
+        /// <param name="places">Die Anzahl an Nachkommastellen auf die gerundet werden soll</param>
+        /// <returns>True wenn die Zahl gerundet wurde, False wenn nicht</returns>
+        public static bool GetIfRounded(double n, int places = 3)
+        {
+            string a = n.ToString();
+            string b = Math.Round(n, places).ToString();
+
+            return a != b;
+        }
+    }
+    /// <summary>
+    /// Klasse mit Methoden zur Konvertierung von Radian und Grad
+    /// </summary>
+    public class RadianDegreeConverter
+    {
+        public CalculationResponse<double> DegreeToRadian(double degree)
+        {
+            CalculationData calculation = new CalculationData("Grad zu Radian", "Umrechnung vom Winkelmaß ins Bogenmaß");
+            double radian = (degree * (Math.PI / 180)) / Math.PI;
+            calculation.Steps.Add(
+                new CalculationStep(
+                    "Umrechnen",
+                    "Zum Umrechnen muss die Zahl im Gradmaß einfach nur mit π/180 multipliziert werden und anschließend durch π geteilt werden.",
+                    MainWindow.GetIfRounded(radian)
+                    ? string.Format("({0}*(π/180))/π≈{1}π", degree, Math.Round(radian, 3))
+                    : string.Format("({0}*(π/180))/π={1}π", degree, radian)
+                    ));
+            return new CalculationResponse<double>(radian, calculation);
+        }
+        public CalculationResponse<double> RadianToDegree(double radian)
+        {
+            CalculationData calculation = new CalculationData("Radian zu Grad", "Umrechnung vom Bogenmaß ins Winkelmaß");
+            double degree = radian * Math.PI * (180 / Math.PI);
+            calculation.Steps.Add(
+                new CalculationStep(
+                    "Umrechnen",
+                    "Zum Umrechnen muss die Zahl im Bogenmaß einfach nur mit 180/π multiplizieren.",
+                    MainWindow.GetIfRounded(radian)
+                    ? string.Format("{0}π*(180/π)≈{1}°", radian, Math.Round(degree, 3))
+                    : string.Format("{0}π*(180/π)={1}°", radian, degree)
+                    ));
+            return new CalculationResponse<double>(degree, calculation);
         }
     }
     /// <summary>

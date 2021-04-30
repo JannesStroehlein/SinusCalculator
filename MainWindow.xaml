@@ -28,8 +28,8 @@
                         <RowDefinition Height="0.6*"/>
                         <RowDefinition Height="1*"/>
                     </Grid.RowDefinitions>
-                    <TextBlock FontWeight="Bold" FontSize="12" Text="{Binding Path=Title}" Grid.Row="0"/>
-                    <TextBlock FontStyle="Italic" Text="{Binding Path=Description}" Grid.Row="1"/>
+                    <TextBlock TextWrapping="Wrap" FontWeight="Bold" FontSize="12" Text="{Binding Path=Title}" Grid.Row="0"/>
+                    <TextBlock TextWrapping="Wrap" FontStyle="Italic" Text="{Binding Path=Description}" Grid.Row="1"/>
                     <Label Content="{Binding Path=Calculation}" Margin="2" Grid.Row="2"/>
                 </Grid>
             </hc:Card>
@@ -38,7 +38,7 @@
             <Expander Header="{Binding Path=Title}" Margin="2">
                 <hc:Card>
                     <StackPanel Margin="5">
-                        <TextBlock Text="{Binding Path=Description}"/>
+                        <TextBlock TextWrapping="Wrap" FontStyle="Italic" Text="{Binding Path=Description}"/>
                         <ItemsControl Margin="5" ItemsSource="{Binding Path=Steps}" ItemTemplate="{StaticResource CalculationStepTemp}"/>
                     </StackPanel>
                 </hc:Card>
@@ -85,8 +85,7 @@
                 <TextBox Style="{StaticResource TextBoxExtend}" x:Name="FunctionEquasionBox" IsReadOnly="True" Grid.Column="0" Grid.ColumnSpan="2" hc:TitleElement.TitlePlacement="Left" hc:TitleElement.Title="f(x)=" hc:TitleElement.TitleWidth="35" Margin="3"/>
                 <hc:PropertyGrid x:Name="FunctionPropertyGrid" Grid.Row="1" VerticalAlignment="Stretch" Grid.Column="0" Grid.ColumnSpan="2"/>
                 <CheckBox IsChecked="True" Margin="3" HorizontalAlignment="Left" Content="Auto Update" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" x:Name="AutoUpdateSwitch"/>
-                <Button Margin="3" x:Name="ResetFunctionGenerator" Click="ResetFunctionGenerator_Click" Content="Reset" HorizontalAlignment="Stretch" Grid.Column="0" Grid.Row="3"/>
-                <Button Margin="3" x:Name="ApplyGraph" Click="ApplyGraph_Click" Content="Graph Aktuallisieren" HorizontalAlignment="Stretch" Grid.Column="1" Grid.Row="3" IsEnabled="{Binding ElementName=AutoUpdateSwitch, Path=IsChecked, Converter={StaticResource InverseBooleanConverter}}"/>
+                <Button Margin="3" x:Name="ApplyGraph" Click="ApplyGraph_Click" Content="Graph Aktuallisieren" HorizontalAlignment="Stretch" Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="3" IsEnabled="{Binding ElementName=AutoUpdateSwitch, Path=IsChecked, Converter={StaticResource InverseBooleanConverter}}"/>
             </Grid>
         </GroupBox>
         <WpfPlot Name="Plot" Grid.Column="1"/>
@@ -103,8 +102,8 @@
                         <RowDefinition Height="1.1*"/>
                         <RowDefinition Height="1*"/>
                     </Grid.RowDefinitions>
-                    <hc:NumericUpDown VerticalAlignment="Center" ValueChanged="DegreeBox_ValueChanged" x:Name="DegreeBox" hc:InfoElement.TitleWidth="140" hc:InfoElement.Title="Gradmaß (°)" Style="{StaticResource NumericUpDownPlus}"/>
-                    <hc:NumericUpDown VerticalAlignment="Center" Grid.Row="1" ValueChanged="RadianBox_ValueChanged" x:Name="RadianBox" hc:InfoElement.TitleWidth="140" hc:InfoElement.Title="Bogenmaß (π)" Style="{StaticResource NumericUpDownPlus}"/>
+                    <hc:NumericUpDown KeyDown="DegreeBox_KeyDown" VerticalAlignment="Center" Grid.Row="0" x:Name="DegreeBox" hc:InfoElement.TitleWidth="140" hc:InfoElement.Title="Gradmaß (°)" Style="{StaticResource NumericUpDownPlus}"/>
+                    <hc:NumericUpDown KeyDown="RadianBox_KeyDown" VerticalAlignment="Center" Grid.Row="1" x:Name="RadianBox" hc:InfoElement.TitleWidth="140" hc:InfoElement.Title="Bogenmaß (π)" Style="{StaticResource NumericUpDownPlus}"/>
                 </Grid>
             </GroupBox>
             <GroupBox Margin="2" Header="Graph" Grid.Column="1">
