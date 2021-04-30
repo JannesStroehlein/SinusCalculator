@@ -66,6 +66,9 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Data\CalculationData.cs" />
+    <Compile Include="Data\CalculationResponse.cs" />
+    <Compile Include="Data\CalculationStep.cs" />
     <Compile Include="InverseBooleanConverter.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>

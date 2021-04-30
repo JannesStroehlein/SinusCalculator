@@ -12,13 +12,27 @@
     xmlns:sc="clr-namespace:SinusCalculator"
     xmlns:converters="clr-namespace:SinusCalculator"
     mc:Ignorable="d"
+    x:Name="Window"
     Title="Sinus Rechner" 
     WindowStartupLocation="CenterScreen"
     ShowTitle="False"
     Height="800" 
-    Width="1200">
+    Width="1400">
     <hc:Window.Resources>
         <converters:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
+        <DataTemplate x:Key="CalculationTemp">
+            <Expander Header="{Binding Path=Title}">
+                <ListView ItemsSource="{Binding Path=Steps}" ItemTemplate="{StaticResource CalculationStepTemp}"/>
+            </Expander>
+        </DataTemplate>
+        <DataTemplate x:Key="CalculationStepTemp">
+            <Expander Header="{Binding Path=Title}">
+                <StackPanel>
+                    <TextBlock Text="{Binding Path=Description}"/>
+                    <Label Content="{Binding Path=Calculation}"/>
+                </StackPanel>
+            </Expander>
+        </DataTemplate>
     </hc:Window.Resources>
     <hc:Window.NonClientAreaContent>
         <DockPanel Height="29" LastChildFill="False">
@@ -38,6 +52,7 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="1*"/>
             <ColumnDefinition Width="3.5*"/>
+            <ColumnDefinition Width="1*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="2.5*"/>
@@ -64,21 +79,17 @@
             </Grid>
         </GroupBox>
         <WpfPlot Name="Plot" Grid.Column="1"/>
-        <GroupBox Margin="2" Header="Rechnung" Grid.Row="1">
-            <hc:TextBox IsReadOnly="True"/>
-        </GroupBox>
-        <Grid Grid.Row="1" Grid.Column="1">
+
+        <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="1*"/>
                 <ColumnDefinition Width="1*"/>
-                <ColumnDefinition Width="2.5*"/>
-                <ColumnDefinition Width="5*"/>
             </Grid.ColumnDefinitions>
             <GroupBox Margin="2" Header="Grad - Gradmaß" Grid.Column="0">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="1*"/>
-                        <RowDefinition Height="1*"/>
+                        <RowDefinition Height="1.1*"/>
+                        <RowDefinition Height="1.1*"/>
                         <RowDefinition Height="1*"/>
                     </Grid.RowDefinitions>
                     <hc:NumericUpDown VerticalAlignment="Center" ValueChanged="DegreeBox_ValueChanged" x:Name="DegreeBox" hc:InfoElement.TitleWidth="140" hc:InfoElement.Title="Gradmaß (°)" Style="{StaticResource NumericUpDownPlus}"/>
@@ -97,7 +108,14 @@
                     <hc:NumericUpDown Minimum="0.01" x:Name="GraphStepInput" VerticalAlignment="Center" Grid.Row="2" DataContext="Step" ValueChanged="GraphData_ValueChanged" hc:InfoElement.TitleWidth="140" hc:InfoElement.Title="Schrittgröße" Style="{StaticResource NumericUpDownPlus}" Increment="0.01"/>
                 </Grid>
             </GroupBox>
-            <GroupBox Margin="2" Header="Y Werte Finden" Grid.Column="2">
+        </Grid>
+        <Grid Grid.Row="1" Grid.Column="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2.5*"/>
+                <ColumnDefinition Width="5*"/>
+            </Grid.ColumnDefinitions>
+
+            <GroupBox Margin="2" Header="Y Werte Finden" Grid.Column="0">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="1.1*"/>
@@ -116,12 +134,12 @@
                         <hc:NumericUpDown x:Name="YFinderStartX" VerticalAlignment="Center" Grid.Column="0" hc:InfoElement.TitleWidth="140" hc:InfoElement.Title="Start π" Style="{StaticResource NumericUpDownPlus}" Maximum="{Binding ElementName=YFinderEndX, Path=Value}"/>
                         <hc:NumericUpDown x:Name="YFinderEndX" VerticalAlignment="Center" Grid.Column="1" hc:InfoElement.TitleWidth="140" hc:InfoElement.Title="End π" Style="{StaticResource NumericUpDownPlus}" Minimum="{Binding ElementName=YFinderStartX, Path=Value}"/>
                     </Grid>
-                    <hc:NumericUpDown x:Name="YFinderYValue" VerticalAlignment="Center" Grid.Row="1" hc:InfoElement.TitleWidth="140" hc:InfoElement.Title="Y Wert" Style="{StaticResource NumericUpDownPlus}"/>
+                    <hc:NumericUpDown KeyDown="YFinderYValue_KeyDown" x:Name="YFinderYValue" VerticalAlignment="Center" Grid.Row="1" hc:InfoElement.TitleWidth="140" hc:InfoElement.Title="Y Wert" Style="{StaticResource NumericUpDownPlus}"/>
                     <Button x:Name="YFinderCalcButton" Grid.Column="0" Grid.Row="3" Content="Berechnen" Click="YFinderCalcButton_Click"/>
                     <TextBox TextWrapping="Wrap" x:Name="YFinderOutputBox" Margin="3,0,0,0" Grid.Row="0" Grid.RowSpan="3" Grid.Column="1" IsReadOnly="True" hc:InfoElement.TitleWidth="140" hc:InfoElement.Title="Ergebnisse" Style="{StaticResource TextBoxExtend}"/>
                 </Grid>
             </GroupBox>
-            <GroupBox Margin="2" Header="Haftungsausschluss" Grid.Column="3">
+            <GroupBox Margin="2" Header="Haftungsausschluss" Grid.Column="1">
                 <TextBlock>
                     Diese Software ist in <Bold>keinster</Bold> Weise dazu gedacht für das Betrügen in Prüfungen<LineBreak/>
                     eingesetzt zu werden. Sollte dies trotzdem getan werden weist der <Hyperlink NavigateUri="https://github.com/JannesStroehlein" RequestNavigate="Hyperlink_RequestNavigate">Uhrheber</Hyperlink><LineBreak/>
@@ -136,5 +154,11 @@
                 </TextBlock>
             </GroupBox>
         </Grid>
+        <GroupBox Margin="2" Header="Rechnung" Grid.Column="2" Grid.Row="0" Grid.RowSpan="2">
+            <ScrollViewer>
+                <ListView x:Name="CalculationView" ItemsSource="{Binding ElementName=Window, Path=Calculations}" ItemTemplate="{StaticResource CalculationTemp}">
+                </ListView>
+            </ScrollViewer>
+        </GroupBox>
     </Grid>
 </hc:Window>

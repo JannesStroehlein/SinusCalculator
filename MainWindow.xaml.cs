@@ -13,6 +13,7 @@ using System.ComponentModel;
 using HandyControl.Controls;
 using System.Collections.Generic;
 using System.Linq;
+using SinusCalculator.Data;
 
 namespace SinusCalculator
 {
@@ -23,6 +24,8 @@ namespace SinusCalculator
     {
         public FunctionProperties CurrentFunction;
         public RadianDegreeConverter CurrentRadianDegreeConverter;
+
+        public List<CalculationData> Calculations { get; private set; }
 
         private double Graph_XMin = -6 * Math.PI;
         private double Graph_XMax = 6 * Math.PI;
@@ -42,6 +45,12 @@ namespace SinusCalculator
                 Degree = 0,
                 Radian = 0
             };
+
+            CalculationData testData = new CalculationData("TEST1");
+            testData.Steps.Add(new CalculationStep("Rechnen", "Macht Spaß", "1+1=?"));
+            //Initialisieren der Liste
+            this.Calculations = new List<CalculationData>();
+            this.Calculations.Add(testData);
 
             //Laden des Fensters
             InitializeComponent();
@@ -192,9 +201,13 @@ namespace SinusCalculator
         /// </summary>
         private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e) => Process.Start(e.Uri.ToString()); //Einfach den Browser mit der Adresse starten
         /// <summary>
-        /// Berechnen der möglichen X Werte in einem Bestimmten Bereich
+        /// Wird Aufgerufen, wenn der Berechnen Button für den X-Werte-Finder gedrückt wird
         /// </summary>
-        private void YFinderCalcButton_Click(object sender, RoutedEventArgs e)
+        private void YFinderCalcButton_Click(object sender, RoutedEventArgs e) => this.CalcXValues();
+        /// <summary>
+        /// Berechnet und zeigt die X Werte für den X-Werte-Finder an
+        /// </summary>
+        public void CalcXValues()
         {
             double Start = this.YFinderStartX.Value * Math.PI;
             double End = this.YFinderEndX.Value * Math.PI;
@@ -271,6 +284,14 @@ namespace SinusCalculator
 
             //Liste nach Größe sortieren
             return Matches.OrderBy(d => d).ToArray();
+        }
+        /// <summary>
+        /// Wird aufgerufen wenn eine Taste in der YFinderYValue Box gedrückt wird
+        /// </summary>
+        private void YFinderYValue_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Enter)
+                this.CalcXValues();
         }
     }
     public class RadianDegreeConverter
