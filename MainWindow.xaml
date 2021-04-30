@@ -20,17 +20,28 @@
     Width="1400">
     <hc:Window.Resources>
         <converters:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
-        <DataTemplate x:Key="CalculationTemp">
-            <Expander Header="{Binding Path=Title}">
-                <ListView ItemsSource="{Binding Path=Steps}" ItemTemplate="{StaticResource CalculationStepTemp}"/>
-            </Expander>
-        </DataTemplate>
         <DataTemplate x:Key="CalculationStepTemp">
-            <Expander Header="{Binding Path=Title}">
-                <StackPanel>
-                    <TextBlock Text="{Binding Path=Description}"/>
-                    <Label Content="{Binding Path=Calculation}"/>
-                </StackPanel>
+            <hc:Card>
+                <Grid Margin="5">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="1.2*"/>
+                        <RowDefinition Height="0.6*"/>
+                        <RowDefinition Height="1*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock FontWeight="Bold" FontSize="12" Text="{Binding Path=Title}" Grid.Row="0"/>
+                    <TextBlock FontStyle="Italic" Text="{Binding Path=Description}" Grid.Row="1"/>
+                    <Label Content="{Binding Path=Calculation}" Margin="2" Grid.Row="2"/>
+                </Grid>
+            </hc:Card>
+        </DataTemplate>
+        <DataTemplate x:Key="CalculationTemp">
+            <Expander Header="{Binding Path=Title}" Margin="2">
+                <hc:Card>
+                    <StackPanel Margin="5">
+                        <TextBlock Text="{Binding Path=Description}"/>
+                        <ItemsControl Margin="5" ItemsSource="{Binding Path=Steps}" ItemTemplate="{StaticResource CalculationStepTemp}"/>
+                    </StackPanel>
+                </hc:Card>
             </Expander>
         </DataTemplate>
     </hc:Window.Resources>
@@ -154,11 +165,17 @@
                 </TextBlock>
             </GroupBox>
         </Grid>
-        <GroupBox Margin="2" Header="Rechnung" Grid.Column="2" Grid.Row="0" Grid.RowSpan="2">
-            <ScrollViewer>
-                <ListView x:Name="CalculationView" ItemsSource="{Binding ElementName=Window, Path=Calculations}" ItemTemplate="{StaticResource CalculationTemp}">
-                </ListView>
-            </ScrollViewer>
-        </GroupBox>
+        <Grid Margin="2" Grid.Row="0" Grid.Column="2" Grid.RowSpan="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="1*"/>
+                <RowDefinition Height="40"/>
+            </Grid.RowDefinitions>
+            <GroupBox Header="Rechnung" Grid.Row="0">
+                <ScrollViewer>
+                    <ItemsControl ItemsSource="{Binding ElementName=Window, Path=Calculations}" ItemTemplate="{StaticResource CalculationTemp}"/>
+                </ScrollViewer>
+            </GroupBox>
+            <Button Content="Rechnungen leeren" Grid.Row="1" Click="ClearCalculations_Click"/>
+        </Grid>
     </Grid>
 </hc:Window>

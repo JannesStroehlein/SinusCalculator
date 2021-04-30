@@ -12,7 +12,7 @@ using System.Windows;
 [assembly: AssemblyCulture("")]
 [assembly: ComVisible(false)]
 [assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
-[assembly: AssemblyVersion("21.4.30.38")]
-[assembly: AssemblyFileVersion("21.4.30.38")]
+[assembly: AssemblyVersion("21.4.30.63")]
+[assembly: AssemblyFileVersion("21.4.30.63")]
 
-[assembly: AssemblyInformationalVersion("21.4.181")]
+[assembly: AssemblyInformationalVersion("21.4.206")]

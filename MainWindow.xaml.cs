@@ -14,6 +14,7 @@ using HandyControl.Controls;
 using System.Collections.Generic;
 using System.Linq;
 using SinusCalculator.Data;
+using System.Collections.ObjectModel;
 
 namespace SinusCalculator
 {
@@ -25,7 +26,7 @@ namespace SinusCalculator
         public FunctionProperties CurrentFunction;
         public RadianDegreeConverter CurrentRadianDegreeConverter;
 
-        public List<CalculationData> Calculations { get; private set; }
+        public ObservableCollection<CalculationData> Calculations { get; private set; }
 
         private double Graph_XMin = -6 * Math.PI;
         private double Graph_XMax = 6 * Math.PI;
@@ -46,11 +47,8 @@ namespace SinusCalculator
                 Radian = 0
             };
 
-            CalculationData testData = new CalculationData("TEST1");
-            testData.Steps.Add(new CalculationStep("Rechnen", "Macht Spaß", "1+1=?"));
             //Initialisieren der Liste
-            this.Calculations = new List<CalculationData>();
-            this.Calculations.Add(testData);
+            this.Calculations = new ObservableCollection<CalculationData>();
 
             //Laden des Fensters
             InitializeComponent();
@@ -293,6 +291,10 @@ namespace SinusCalculator
             if (e.Key == System.Windows.Input.Key.Enter)
                 this.CalcXValues();
         }
+        /// <summary>
+        /// Wird aufgerufen, wenn der Rechnungen leeren Button geklickt wird
+        /// </summary>
+        private void ClearCalculations_Click(object sender, RoutedEventArgs e) => this.Calculations.Clear();
     }
     public class RadianDegreeConverter
     {
