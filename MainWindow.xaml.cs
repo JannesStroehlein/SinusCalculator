@@ -11,6 +11,8 @@ using System.Diagnostics;
 using System.Windows;
 using System.ComponentModel;
 using HandyControl.Controls;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace SinusCalculator
 {
@@ -66,8 +68,7 @@ namespace SinusCalculator
             this.FunctionEquasionBox.Text = this.CurrentFunction.GetFunctionTerm();
             if (this.AutoUpdateSwitch.IsChecked.Value)
                 this.UpdatePlot();
-        }
-        
+        }       
         /// <summary>
         /// Dafür zuständig den Radian - Grad Umrechner zu betreiben
         /// </summary>
@@ -114,12 +115,15 @@ namespace SinusCalculator
 
             for (int i = 0; i < ys.Length; i++)
             {
-                double X = this.Graph_XMax + i * this.Graph_Step;
+                double X = this.Graph_XMin + i * this.Graph_Step;
+                double Y;
                 xs[i] = X;
+                
                 if (this.CurrentFunction.Cosinus)
-                    ys[i] = this.CurrentFunction.Amplitude * (Math.Sin(this.CurrentFunction.Frequency * (X - this.CurrentFunction.XOffset)) + this.CurrentFunction.YOffset);
+                    Y = this.CurrentFunction.Amplitude * (Math.Sin(this.CurrentFunction.Frequency * (X - this.CurrentFunction.XOffset)) + this.CurrentFunction.YOffset);
                 else
-                    ys[i] = this.CurrentFunction.Amplitude * (Math.Cos(this.CurrentFunction.Frequency * (X - this.CurrentFunction.XOffset)) + this.CurrentFunction.YOffset);
+                    Y = this.CurrentFunction.Amplitude * (Math.Cos(this.CurrentFunction.Frequency * (X - this.CurrentFunction.XOffset)) + this.CurrentFunction.YOffset);
+                ys[i] = Y;
             }
 
             //Nutzerinterface aktuallisieren
@@ -187,6 +191,65 @@ namespace SinusCalculator
         /// Wird aufgerufen wenn ein Link geklickt wird
         /// </summary>
         private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e) => Process.Start(e.Uri.ToString()); //Einfach den Browser mit der Adresse starten
+        /// <summary>
+        /// Berechnen der möglichen X Werte in einem Bestimmten Bereich
+        /// </summary>
+        private void YFinderCalcButton_Click(object sender, RoutedEventArgs e)
+        {
+            double Start = this.YFinderStartX.Value * Math.PI;
+            double End = this.YFinderEndX.Value * Math.PI;
+            double Value = this.YFinderYValue.Value;
+
+            this.YFinderOutputBox.Text = "";
+            double[] values = this.CalcClampedXValuesForYValue(Start, End, Value);
+            if (values != null)
+            {
+                if (values.Length > 0)
+                    foreach (double xValue in values)
+                        this.YFinderOutputBox.Text += xValue == values[values.Length - 1] ? Math.Round(xValue, 3) + "π" : Math.Round(xValue, 3) + "π, ";
+                else
+                    this.YFinderOutputBox.Text = "Kein Ergebniss";
+            }
+            else
+                this.YFinderOutputBox.Text = "Kein Ergebniss";
+        }
+        public double[] CalcClampedXValuesForYValue(double Start, double End, double Value)
+        {
+            //Fehler Verhindern
+            if (Value > this.CurrentFunction.Amplitude)
+                return null;
+            
+            //Den Ersten X-Punkt wo Y den gesuchten Wert hat (berücksichtigt Sinus und Cosinus)
+            double StartRadian = this.CurrentFunction.Cosinus ? Math.Acos(Value) : Math.Asin(Value);
+
+            //Fehler Verhindern
+            if (double.IsNaN(StartRadian))
+                return null;
+
+            List<double> Matches = new List<double>();
+
+            //Um es einheitlich zu halten wird mit π multipliziert
+            StartRadian *= Math.PI;
+
+            //Den Ersten X-Wert zu den Ergebnissen hinzufügen
+            Matches.Add(StartRadian);
+
+            //double JumpCount = End - Start / 2 * Math.PI;
+
+            //Die Periodenlänge berechnen
+            double JumpSize = 2 * Math.PI / this.CurrentFunction.Frequency;
+
+            //Die periodischen Wiederholungen von Startpunkt nach links berechnen und dabei auf den minimum Wert achten 
+            for (double x = StartRadian - JumpSize; x > Start; x -= JumpSize)
+                Matches.Add(x);
+
+            //Die periodischen Wiederholungen von Startpunkt nach rechts berechnen und dabei auf den minimum Wert achten 
+            for (double x = StartRadian + JumpSize; x < End; x += JumpSize)
+                Matches.Add(x);
+
+            //Liste nach Größe sortieren
+            return Matches.OrderBy(d => d).ToArray();
+        }
     }
     public class RadianDegreeConverter
     {
