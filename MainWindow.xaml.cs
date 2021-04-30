@@ -213,6 +213,13 @@ namespace SinusCalculator
             else
                 this.YFinderOutputBox.Text = "Kein Ergebniss";
         }
+        /// <summary>
+        /// Findet alle X Werte für einen Y Wert in einem bestimmten Bereich einer Sinusfunktion
+        /// </summary>
+        /// <param name="Start">Der minimal X Wert</param>
+        /// <param name="End">Der maximal X Wert</param>
+        /// <param name="Value">Der gesuchte Y Wert</param>
+        /// <returns>Die Gefundenen Werte oder falls es zu einem Fehler kommt null</returns>
         public double[] CalcClampedXValuesForYValue(double Start, double End, double Value)
         {
             //Fehler Verhindern
@@ -229,7 +236,7 @@ namespace SinusCalculator
             List<double> Matches = new List<double>();
 
             //Um es einheitlich zu halten wird mit π multipliziert
-            StartRadian *= Math.PI;
+            //StartRadian *= Math.PI;
 
             //Den Ersten X-Wert zu den Ergebnissen hinzufügen
             Matches.Add(StartRadian);
@@ -241,11 +248,26 @@ namespace SinusCalculator
 
             //Die periodischen Wiederholungen von Startpunkt nach links berechnen und dabei auf den minimum Wert achten 
             for (double x = StartRadian - JumpSize; x > Start; x -= JumpSize)
+            {
                 Matches.Add(x);
+                //Die gespiegelte X-Position herausfinden
+                double MirroredPoint = Math.PI - x;
+                if (MirroredPoint > Start)
+                    Matches.Add(MirroredPoint);
+            }        
 
             //Die periodischen Wiederholungen von Startpunkt nach rechts berechnen und dabei auf den minimum Wert achten 
             for (double x = StartRadian + JumpSize; x < End; x += JumpSize)
+            {
                 Matches.Add(x);
+                //Die gespiegelte X-Position herausfinden
+                double MirroredPoint = Math.PI - x;
+                if (MirroredPoint < End)
+                    Matches.Add(MirroredPoint);
+            }
+
+            for (int i = 0; i < Matches.Count; i++)
+                Matches[i] = Matches[i] / Math.PI;
 
             //Liste nach Größe sortieren
             return Matches.OrderBy(d => d).ToArray();
