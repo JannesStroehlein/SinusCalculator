@@ -177,7 +177,7 @@ namespace SinusCalculator
         {
             double Start = this.YFinderStartX.Value * Math.PI;
             double End = this.YFinderEndX.Value * Math.PI;
-            double Value = this.YFinderYValue.Value;
+            double Value = this.YFinderYValue.Value - this.CurrentFunction.YOffset;
 
             this.YFinderOutputBox.Text = "";
             CalculationResponse<double[]> values = this.CalcClampedXValuesForYValue(Start, End, Value);
@@ -210,26 +210,56 @@ namespace SinusCalculator
             if (Value > this.CurrentFunction.Amplitude)
                 return null;
             
-            //Den Ersten X-Punkt wo Y den gesuchten Wert hat (berücksichtigt Sinus und Cosinus)
-            double StartRadian = this.CurrentFunction.Cosinus ? Math.Acos(Value) : Math.Asin(Value);
+            //Die Ersten Symetriepunkte ausrechnen
+            double XFirst = this.CurrentFunction.Cosinus ? Math.Acos(Value) : Math.Asin(Value);
+            double XFirstMirrored = this.CurrentFunction.Cosinus ? 2 * Math.PI - Math.Acos(Value) : Math.PI - Math.Asin(Value);
+
+            //Fehler Verhindern
+            if (double.IsNaN(XFirst) | double.IsNaN(XFirstMirrored))
+                return null;
+
             calculation.Steps.Add(
                 new CalculationStep(
                     "Startpunkt errechnen",
-                    "Mit asinus den ersten Punkt errechnen. Dieser ist auch eines der Ergebnisse!",
-                    GetIfRounded(StartRadian) 
-                    ? this.CurrentFunction.Cosinus ? string.Format("cos⁻¹({0})≈{1}", Value, Math.Round(StartRadian, 3)) : string.Format("sin⁻¹({0})≈{1}", Value, Math.Round(StartRadian, 3))
-                    : this.CurrentFunction.Cosinus ? string.Format("cos⁻¹({0})={1}", Value, Math.Round(StartRadian, 3)) : string.Format("sin⁻¹({0})={1}", Value, Math.Round(StartRadian, 3))
+                    this.CurrentFunction.Cosinus ? "Mit cos⁻¹ den ersten Punkt errechnen. Dieser ist auch eines der Ergebnisse!" : "Mit sin⁻¹ den ersten Punkt errechnen. Dieser ist auch eines der Ergebnisse!",
+                    GetIfRounded(XFirst) 
+                    ? this.CurrentFunction.Cosinus ? string.Format("cos⁻¹({0})≈{1}", Value, Math.Round(XFirst, 3)) : string.Format("sin⁻¹({0})≈{1}", Value, Math.Round(XFirst, 3))
+                    : this.CurrentFunction.Cosinus ? string.Format("cos⁻¹({0})={1}", Value, Math.Round(XFirst, 3)) : string.Format("sin⁻¹({0})={1}", Value, Math.Round(XFirst, 3))
                 ));
-            //Fehler Verhindern
-            if (double.IsNaN(StartRadian))
-                return null;
+            calculation.Steps.Add(
+                new CalculationStep(
+                    "Spiegelung des Startpunktes errechnen",
+                    this.CurrentFunction.Cosinus ? "Den Startpunkt von 2π abziehen." : "Den Startpunkt von π abziehen.",
+                    GetIfRounded(XFirst) | GetIfRounded(XFirstMirrored)
+                    ? this.CurrentFunction.Cosinus ? string.Format("2π-{0}≈{1}", Math.Round(XFirst, 3), Math.Round(XFirstMirrored, 3)) : string.Format("π-{0}≈{1}", Math.Round(XFirst, 3), Math.Round(XFirst, 3))
+                    : this.CurrentFunction.Cosinus ? string.Format("2π-{0}={1}", Math.Round(XFirst, 3), Math.Round(XFirstMirrored, 3)) : string.Format("π-{0}≈{1}", Math.Round(XFirst, 3), Math.Round(XFirst, 3))
+                ));
+
+
+            //X Verschiebung berücksichtigen
+            if (this.CurrentFunction.XOffset != 0)
+            {
+                calculation.Steps.Add(
+                    new CalculationStep(
+                        "X Verschiebung beachten",
+                        "Die X Verschiebung auf den Startpunkt addieren",
+                        GetIfRounded(XFirst) | GetIfRounded(XFirstMirrored)
+                        ? string.Format("{0}+{1}≈{2}\n", Math.Round(XFirst, 3), this.CurrentFunction.XOffset, Math.Round(XFirst + this.CurrentFunction.XOffset, 3))
+                        + string.Format("{0}+{1}≈{2}", Math.Round(XFirstMirrored, 3), this.CurrentFunction.XOffset, Math.Round(XFirstMirrored + this.CurrentFunction.XOffset, 3))
+                        : string.Format("{0}+{1}={2}\n", Math.Round(XFirst, 3), this.CurrentFunction.XOffset, Math.Round(XFirst + this.CurrentFunction.XOffset, 3))
+                        + string.Format("{0}+{1}={2}", Math.Round(XFirstMirrored, 3), this.CurrentFunction.XOffset, Math.Round(XFirstMirrored + this.CurrentFunction.XOffset, 3))
+                    ));
+                XFirst += this.CurrentFunction.XOffset;
+                XFirstMirrored += this.CurrentFunction.XOffset;
+            }
 
             List<double> Matches = new List<double>();
 
             //Den Ersten X-Wert zu den Ergebnissen hinzufügen
-            Matches.Add(StartRadian);
-
-            //double JumpCount = End - Start / 2 * Math.PI;
+            if (XFirst > Start & XFirst < End)
+                Matches.Add(XFirst);
+            if (XFirstMirrored > Start & XFirstMirrored < End)
+                Matches.Add(XFirstMirrored);
 
             //Die Periodenlänge berechnen
             double JumpSize = 2 * Math.PI / this.CurrentFunction.Frequency;
@@ -245,36 +275,36 @@ namespace SinusCalculator
                     ));
             }
 
-            //Die periodischen Wiederholungen von Startpunkt nach links berechnen und dabei auf den minimum Wert achten 
-            for (double x = StartRadian - JumpSize; x > Start; x -= JumpSize)
-            {
-                Matches.Add(x);
-                //Die gespiegelte X-Position herausfinden
-                double MirroredPoint = Math.PI - x;
-                if (MirroredPoint > Start)
-                    Matches.Add(MirroredPoint);
-            }        
+            for (double x = XFirst - JumpSize; x > Start; x -= JumpSize)
+                if (x > Start & x < End)
+                    Matches.Add(x);
+            for (double x = XFirstMirrored - JumpSize; x > Start; x -= JumpSize)
+                if (x > Start & x < End)
+                    Matches.Add(x);
 
-            //Die periodischen Wiederholungen von Startpunkt nach rechts berechnen und dabei auf den minimum Wert achten 
-            for (double x = StartRadian + JumpSize; x < End; x += JumpSize)
-            {
-                Matches.Add(x);
-                //Die gespiegelte X-Position herausfinden
-                double MirroredPoint = Math.PI - x;
-                if (MirroredPoint < End)
-                    Matches.Add(MirroredPoint);
-            }
+            for (double x = XFirst + JumpSize; x < End; x += JumpSize)
+                if (x > Start & x < End)
+                    Matches.Add(x);
+            for (double x = XFirstMirrored + JumpSize; x < End; x += JumpSize)
+                if (x > Start & x < End)
+                    Matches.Add(x);
 
             calculation.Steps.Add(
                 new CalculationStep(
                     "X Werte berechnen",
-                    "Die Periodenlänge X-Mal mit dem Startpunkt addieren/subtrahieren. Anschließend die Spiegelung des Wertes Berechnen.",
-                    string.Format("{0}+X*{1} oder {0}-X*{1}", Math.Round(StartRadian, 3), Math.Round(JumpSize, 3)) + "\n"
-                     + string.Format("π-({0}+X*{1})", Math.Round(StartRadian, 3), Math.Round(JumpSize, 3))
+                    "Die Periodenlänge X-Mal mit dem Startpunkt addieren/subtrahieren.",
+                    string.Format("{0}+X*{1} oder {0}-X*{1}", Math.Round(XFirst, 3), Math.Round(JumpSize, 3))
+                ));
+            calculation.Steps.Add(
+                new CalculationStep(
+                    "Spiegelung der X Werte berechnen",
+                    "Die Periodenlänge X-Mal mit der Spiegelung addieren/subtrahieren.",
+                    string.Format("{0}+X*{1} oder {0}-X*{1}", Math.Round(XFirstMirrored, 3), Math.Round(JumpSize, 3))
                 ));
 
+            //Durch π teilen und die X Verschiebung addieren
             for (int i = 0; i < Matches.Count; i++)
-                Matches[i] = Matches[i] / Math.PI;
+                Matches[i] = Matches[i] / Math.PI + this.CurrentFunction.XOffset;
 
             //Liste nach Größe sortieren
             return new CalculationResponse<double[]>(Matches.OrderBy(d => d).ToArray(), calculation);
